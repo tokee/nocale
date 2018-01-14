@@ -52,9 +52,12 @@ function escape() {
 function request_token() {
     local TIMESTAMP=$(date +%s)
     local NONCE=$(uuidgen)
-    local BASE_STRING="GET&$(escape "$API_REQUEST_TOKEN")&oauth_callback%3D$(escape "$API_REQUEST_TOKEN_CALLBACK")%26oauth_consumer_key%3D${API_KEY}%26oauth_nonce%3D${NONCE}%26oauth_signature_method%3D${OAUTH_SIGNATURE_METHOD}%26oauth_timestamp%3D${TIMESTAMP}%26oauth_version%3D${OAUTH_VERSION}"
+    # Yes, callback must be double-escaped
+    local BASE_STRING="GET&$(escape "$API_REQUEST_TOKEN")&oauth_callback%3D$(escape $(escape "$API_REQUEST_TOKEN_CALLBACK"))%26oauth_consumer_key%3D${API_KEY}%26oauth_nonce%3D${NONCE}%26oauth_signature_method%3D${OAUTH_SIGNATURE_METHOD}%26oauth_timestamp%3D${TIMESTAMP}%26oauth_version%3D${OAUTH_VERSION}"
+    echo "Base: $BASE_STRING"
     # https://stackoverflow.com/questions/7285059/hmac-sha1-in-bash
     local SIGNATURE=$(escape $(openssl dgst -binary -sha1 -hmac "${API_SECRET}&" <<< "$BASE_STRING" | base64) )
+    # Only single-escape of callback here
     local URL="${API_REQUEST_TOKEN}?oauth_callback=$(escape "$API_REQUEST_TOKEN_CALLBACK")&oauth_consumer_key=${API_KEY}&oauth_nonce=${NONCE}&oauth_signature=${SIGNATURE}%3D&oauth_signature_method=${OAUTH_SIGNATURE_METHOD}&oauth_timestamp=${TIMESTAMP}&oauth_version=${OAUTH_VERSION}"
     echo "$URL"
 }
